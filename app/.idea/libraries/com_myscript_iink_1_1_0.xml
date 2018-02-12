@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="com.myscript:iink-1.1.0">
+    <CLASSES>
+      <root url="jar://D:/AndroidConfig/.gradle/caches/transforms-1/files-1.1/iink-1.1.0.aar/eec171e1eabaf95aa351a41e26a6ebc1/jars/classes.jar!/" />
+      <root url="file://D:/AndroidConfig/.gradle/caches/transforms-1/files-1.1/iink-1.1.0.aar/eec171e1eabaf95aa351a41e26a6ebc1/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
