@@ -49,9 +49,6 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
     public void onBindViewHolder(ImageViewHolder holder, int position) {
         WishImage wishImage = images.get(position);
         ImageView imageView = holder.imageView;
-        Glide.with(mContext)
-                .load(wishImage.getUrl())
-                .into(imageView);
         if(isACTION_MODE){
             setIndicatingActionMode(holder);
             setItemSelected(holder,isInSelectedItemList(wishImage.getmId()));
@@ -59,6 +56,9 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
         else{
             setIndicatingNormalMode(holder);
         }
+        Glide.with(mContext)
+                .load(wishImage.getUrl())
+                .into(imageView);
     }
 
     private void setIndicatingNormalMode(ImageViewHolder holder) {

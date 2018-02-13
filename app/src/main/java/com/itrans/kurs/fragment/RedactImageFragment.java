@@ -2,7 +2,6 @@ package com.itrans.kurs.fragment;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -18,6 +17,10 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.itrans.kurs.IInkApplication;
 import com.itrans.kurs.R;
 import com.myscript.iink.Configuration;
@@ -72,7 +75,6 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
     }
 
     public static RedactImageFragment newInstance(Uri uri, Uri tempImageUri,String tag,String price,String comment,int type) {
-        Log.d("TAG","redactNewInstance "+tag);
         RedactImageFragment fragment = new RedactImageFragment();
         Bundle args = new Bundle();
         args.putParcelable(ARG_TEMP_IMAGE, tempImageUri);
@@ -132,16 +134,24 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
         setHasOptionsMenu(true);
     }
 
+    private RequestListener<String, GlideDrawable> requestListener = new RequestListener<String, GlideDrawable>() {
+        @Override
+        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
+            Log.e("TAG","Glide Exception "+e.toString());
+            return false;
+        }
+
+        @Override
+        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+            return false;
+        }
+    };
+
     private void grabImage(ImageView imageView){
-        getActivity().getContentResolver().notifyChange(tempImageUri,null);
-        ContentResolver cr = getActivity().getContentResolver();
-        try{
-            imageBitmap = android.provider.MediaStore.Images.Media.getBitmap(cr,tempImageUri);
-            imageView.setImageBitmap(imageBitmap);
-        }
-        catch(IOException e){
-            e.printStackTrace();
-        }
+        Log.d("TAG","grabImageStart");
+        Glide.with(this)
+                .load(tempImageUri)
+                .into(imageView);
     }
 
     @Override
@@ -151,12 +161,6 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
         image_preview = v.findViewById(R.id.image_preview);
         input_comment = v.findViewById(R.id.input_comment);
         input_price = v.findViewById(R.id.input_price);
-        if(tempImageUri != null) {
-            grabImage(image_preview);
-        }else{
-            image_preview.setImageURI(mImageUri);
-        }
-
         if(mEditType == TYPE_EDIT){
             setupIInk(v);
             input_comment.setText(comment);
@@ -169,6 +173,26 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
             v.findViewById(R.id.editor_view).setVisibility(View.GONE);
             input_comment.setText(text);
         }
+
+        image_preview.post(new Runnable() {
+            @Override
+            public void run() {
+                if(tempImageUri != null) {
+                    grabImage(image_preview);
+                }else{
+                    Log.d("TAG","Uri: "+mImageUri.getPath());
+                    Glide.with(getActivity())
+                            .load(mImageUri.getPath())
+                            .listener(requestListener)
+                            .placeholder(android.R.color.holo_green_light)
+                            .error(android.R.color.holo_red_light)
+                            .fallback(android.R.color.holo_orange_light)
+                            .into(image_preview);
+                }
+            }
+        });
+
+
         return v;
     }
 
@@ -197,9 +221,10 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
         if (mListener != null) {
             if(mEditType == TYPE_EDIT) {
                 mListener.onRedactFragmentInteraction(uri, price, comment);
+                getActivity().getFragmentManager().popBackStack();
             }
             else{
-                mListener.onShareFragmentInteraction(uri,comment);
+                ItemInformationFragment.createShareIntent(getActivity(),uri,comment);
             }
         }
     }
@@ -268,7 +293,6 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
         if(mEditType == TYPE_EDIT){
             price = input_price.getText().toString();
         }
-        getActivity().getFragmentManager().popBackStack();
         onButtonPressed(mImageUri.getPath(), price,comment);
     }
 
@@ -295,18 +319,15 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
         editor.addListener(new IEditorListener() {
             @Override
             public void partChanging(Editor editor, ContentPart contentPart, ContentPart contentPart1) {
-                Log.d("TAG","partChanging");
             }
 
             @Override
             public void partChanged(Editor editor) {
-                Log.d("TAG","partChanged");
                 getActivity().invalidateOptionsMenu();
             }
 
             @Override
             public void contentChanged(Editor editor, String[] strings) {
-                Log.d("TAG","contentChanged");
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -352,6 +373,7 @@ public class RedactImageFragment extends Fragment implements View.OnClickListene
         v.findViewById(R.id.button_undo).setOnClickListener(this);
         v.findViewById(R.id.button_redo).setOnClickListener(this);
         v.findViewById(R.id.button_clear).setOnClickListener(this);
+        Log.d("TAG","setupIInkEnd");
     }
 
     private void invalidateIconButtons(){

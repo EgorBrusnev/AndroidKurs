@@ -2,12 +2,14 @@ package com.itrans.kurs.fragment;
 
 import android.app.Fragment;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,6 +21,10 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.itrans.kurs.R;
 import com.itrans.kurs.model.WishImage;
 
@@ -103,6 +109,19 @@ public class ItemInformationFragment extends Fragment implements RedactImageFrag
         setHasOptionsMenu(true);
     }
 
+    private RequestListener<String, GlideDrawable> requestListener = new RequestListener<String, GlideDrawable>() {
+        @Override
+        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
+            Log.e("TAG","Glide Exception "+e.toString());
+            return false;
+        }
+
+        @Override
+        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+            return false;
+        }
+    };
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -110,13 +129,34 @@ public class ItemInformationFragment extends Fragment implements RedactImageFrag
         item_price = v.findViewById(R.id.item_price);
         item_comment = v.findViewById(R.id.item_comment);
         item_image = v.findViewById(R.id.item_image);
-        item_price.setText(mWishItem.getPrice());
-        item_comment.setText(mWishItem.getComment());
+
+        if(!mWishItem.getPrice().equals("")){
+            item_price.setText("Price: "+mWishItem.getPrice());
+        }
+        else{
+            item_price.setVisibility(View.GONE);
+        }
+
+        if(!mWishItem.getComment().equals("")){
+            item_comment.setText("Your comment: "+mWishItem.getComment());
+        }
+        else{
+            item_comment.setVisibility(View.GONE);
+        }
+
+        item_image.post(new Runnable() {
+            @Override
+            public void run() {
+                Glide.with(getActivity())
+                        .load(mWishItem.getUrl())
+                        .listener(requestListener)
+                        .error(android.R.color.holo_red_light)
+                        .fallback(android.R.color.holo_orange_light)
+                        .into(item_image);
+            }
+        });
         try{
             exif = new ExifInterface(mWishItem.getUrl());
-
-            previewImageBitmap();
-
             String lat = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE);
             String lon = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE);
             String lat_ref = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF);
@@ -142,6 +182,8 @@ public class ItemInformationFragment extends Fragment implements RedactImageFrag
     }
 
     private void previewImageBitmap(){
+
+
         item_image.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
@@ -183,10 +225,10 @@ public class ItemInformationFragment extends Fragment implements RedactImageFrag
 
     @Override
     public void onShareFragmentInteraction(String uri, String comment) {
-        createShareIntent(uri,comment);
+        createShareIntent(getActivity(), uri,comment);
     }
 
-    private void createShareIntent(String imageDir, String comment){
+    public static void createShareIntent(Context context, String imageDir, String comment){
         File file = new File(imageDir);
         Uri uri = Uri.fromFile(file);
         Intent share = new Intent();
@@ -195,6 +237,6 @@ public class ItemInformationFragment extends Fragment implements RedactImageFrag
         share.putExtra(Intent.EXTRA_TEXT,comment);
         share.setType("image/*");
         share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(share,"Share Image"));
+        context.startActivity(Intent.createChooser(share,"Share Image"));
     }
 }

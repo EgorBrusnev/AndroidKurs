@@ -50,7 +50,7 @@ public class MainListFragment extends ListFragment implements WishAddFragment.On
         data = getArguments().getParcelableArrayList("wishList");
         adapter = new MainListAdapter(getActivity(), R.layout.wish_list_item,data);
         registerForContextMenu(getListView());
-        setListAdapter(adapter);
+        setListAdapter(adapter);Log.d("TAG","grabImageEnd");
     }
 
     @Override

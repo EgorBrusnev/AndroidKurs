@@ -111,7 +111,6 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
         }
         dbHelper = new DBHelper(getActivity());
         wishData = WishImage.getWishImages(dbHelper, mDirName);
-        WishImage.showDatabase(dbHelper,"onCreate");
         deleteData = new ArrayList<>();
         selectedItemList = new ArrayList<>();
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity());
@@ -157,9 +156,10 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
         recyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
             GestureDetector gd = new GestureDetector(getActivity(),new GestureDetector.SimpleOnGestureListener(){
 
+
                 @Override
-                public boolean onSingleTapConfirmed(MotionEvent e) {
-                    Log.d("TAG","SIngle tap");
+                public boolean onSingleTapUp(MotionEvent e) {
+                    Log.d("TAG","onSingleTapUp");
                     if(adapter.isActionMode()){
                         View child = recyclerView.findChildViewUnder(e.getX(),e.getY());
                         int selectedPosition = recyclerView.getChildAdapterPosition(child);
@@ -178,6 +178,13 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
                             ft.commit();
                         }
                     }
+                    return super.onSingleTapUp(e);
+                }
+
+                @Override
+                public boolean onSingleTapConfirmed(MotionEvent e) {
+                    Log.d("TAG","SingleTap");
+//
                     return  false;
                 }
 
@@ -201,6 +208,7 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
 
             @Override
             public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+                Log.d("TAG","onInterceptTouchEvent");
                 gd.onTouchEvent(e);
                 return false;
             }
@@ -226,7 +234,6 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        Log.d("TAG","onCreateOptionsMenu");
         if(adapter.isActionMode()){
             inflater.inflate(R.menu.wish_gallery_action_mode_menu,menu);
         }else {
@@ -236,7 +243,6 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d("TAG","onOptionsItemSelected");
         switch (item.getItemId()){
             case R.id.addNewImage:
                 makeNewImage();
@@ -366,6 +372,7 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
                             if(location!=null){
                                 double longitude = location.getLongitude();
                                 double latitude = location.getLatitude();
+                                Log.d("TAG","latlon "+latitude+" "+longitude);
                                 geoTag(imageUri.getPath(),latitude,longitude);
                                 wishData.add(wi);
                                 adapter.notifyDataSetChanged();
@@ -400,6 +407,7 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
             exif = new ExifInterface(filename);
             String new_latitude = convert(latitude);
             String new_longitude = convert(longitude);
+
 
             exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, new_latitude);
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, new_longitude);
@@ -478,22 +486,18 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
     }
 
     private void insertOrUpdate(){
-        WishImage.showDatabase(dbHelper,"before insert");
         ContentValues cv = new ContentValues();
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         for(WishImage wi:wishData){
-            Log.d("TAG","insertOrUpdate "+wi.toString());
             cv.put(DBHelper.KEY_WISH_NAME,wi.getName());
             cv.put(DBHelper.KEY_IMAGE_URI,wi.getUrl());
             cv.put(DBHelper.KEY_IMAGE_PRICE,wi.getPrice());
             cv.put(DBHelper.KEY_IMAGE_COMMENT,wi.getComment());
             int id = database.update(DBHelper.TABLE_WISHES,cv,DBHelper.KEY_ID+" = ? AND "+DBHelper.KEY_WISH_NAME+" = ?",new String[]{""+wi.getmId(),wi.getName()});
             if(id == 0){
-                Log.d("TAG","insert");
                 database.insertWithOnConflict(DBHelper.TABLE_WISHES,null,cv,SQLiteDatabase.CONFLICT_REPLACE);
             }
         }
-        WishImage.showDatabase(dbHelper,"after insert");
     }
 
     public static void deleteWish(WishImage wish){
@@ -536,7 +540,7 @@ public class WishGalleryFragment extends Fragment implements RedactImageFragment
         ArrayList<Uri> selectedImages = new ArrayList<>();
 
         for(Integer i: selectedItemList){
-            String imagePath = wishData.get(i).getUrl();
+            String imagePath = getItemById(i).getUrl();
             selectedImages.add(Uri.fromFile(new File(imagePath)));
         }
         Intent shareIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);

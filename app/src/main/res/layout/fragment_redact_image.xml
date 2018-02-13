@@ -57,7 +57,7 @@
         android:layout_below="@+id/input_price"
         android:ems="10"
         android:hint="Add a comment"
-        android:inputType="textPersonName"/>
+        android:inputType="textMultiLine"/>
 
     <FrameLayout
     android:id="@+id/iinkFrame"
@@ -68,7 +68,7 @@
         <ImageView
             android:id="@+id/image_preview"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:contentDescription="imagePreview" />
 
         <include layout="@layout/editor_view" />
